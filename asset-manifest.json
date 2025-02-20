@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/DreamTube/static/css/main.3f04f75e.css",
+    "main.js": "/DreamTube/static/js/main.b15360c8.js",
+    "static/js/453.79faa093.chunk.js": "/DreamTube/static/js/453.79faa093.chunk.js",
+    "static/media/sprite.svg": "/DreamTube/static/media/sprite.feaef0a070ef085dff8a9ee7f58f8bce.svg",
+    "index.html": "/DreamTube/index.html",
+    "main.3f04f75e.css.map": "/DreamTube/static/css/main.3f04f75e.css.map",
+    "main.b15360c8.js.map": "/DreamTube/static/js/main.b15360c8.js.map",
+    "453.79faa093.chunk.js.map": "/DreamTube/static/js/453.79faa093.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.3f04f75e.css",
+    "static/js/main.b15360c8.js"
+  ]
+}
