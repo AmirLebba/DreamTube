@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -11,11 +11,7 @@ const VideoPlayer = () => {
     const [isLoadingQuality, setIsLoadingQuality] = useState(false);
 
     // Fetch video metadata
-    const {
-        data: video,
-        isLoading,
-        error,
-    } = useQuery({
+    const { data: video, isLoading, error } = useQuery({
         queryKey: ["video", id],
         queryFn: async () => {
             const response = await axios.get(
@@ -25,43 +21,50 @@ const VideoPlayer = () => {
         },
     });
 
-    // Loading and error states
-    if (isLoading) return <div className="loading">Loading video...</div>;
-    if (error)
-        return (
-            <div className="error">Error loading video: {error.message}</div>
-        );
+    // Extract available video URLs
+    const videoUrls = video?.video_urls || {};
 
-    // Extract qualities and default quality
-    const availableQualities = video?.qualities || {};
-    const defaultQuality = availableQualities["720p"] || video?.url;
+    // Set default quality when video data is loaded
+    useEffect(() => {
+        if (!currentQuality && videoUrls) {
+            setCurrentQuality(
+                videoUrls["720p"] || videoUrls["1080p"] || videoUrls["480p"] || Object.values(videoUrls)[0] || ""
+            );
+        }
+    }, [videoUrls, currentQuality]);
 
     // Quality change handler
     const handleQualityChange = async (url) => {
-        if (videoRef.current) {
-            setIsLoadingQuality(true);
-            try {
-                const currentTime = videoRef.current.currentTime;
-                videoRef.current.src = url;
-                videoRef.current.load();
+        if (!videoRef.current) return;
+        setIsLoadingQuality(true);
+
+        try {
+            const currentTime = videoRef.current.currentTime;
+            videoRef.current.pause(); // Pause before changing source
+            videoRef.current.src = url;
+            videoRef.current.load();
+
+            // Wait for the video to load and resume playback
+            videoRef.current.addEventListener("canplay", function onCanPlay() {
                 videoRef.current.currentTime = currentTime;
-                await videoRef.current.play();
-                setCurrentQuality(url);
-            } catch (e) {
-                console.error("Failed to change video quality:", e);
-                alert("An error occurred while changing the video quality.");
-            } finally {
+                videoRef.current.play().catch((err) => console.error("Autoplay prevented:", err));
                 setIsLoadingQuality(false);
-            }
+                videoRef.current.removeEventListener("canplay", onCanPlay);
+            }, { once: true }); // Use { once: true } to automatically remove the event listener
+        } catch (e) {
+            console.error("Failed to change video quality:", e);
+            alert("An error occurred while changing the video quality.");
+            setIsLoadingQuality(false);
         }
     };
 
     // Playback error handler
     const handleError = () => {
-        alert(
-            "An error occurred while playing the video. Please try again later."
-        );
+        alert("An error occurred while playing the video. Please try again later.");
     };
+
+    if (isLoading) return <div className="loading">Loading video...</div>;
+    if (error) return <div className="error">Error loading video: {error.message}</div>;
 
     return (
         <div className="video-player-container">
@@ -70,44 +73,37 @@ const VideoPlayer = () => {
                 <video
                     controls
                     ref={videoRef}
-                    src={currentQuality || defaultQuality}
+                    src={currentQuality}
                     className="html5-video-player"
                     onError={handleError}
-                    poster={video?.thumbnail || "default-thumbnail.jpg"} // Display thumbnail
+                    poster={video?.thumbnail_url || "default-thumbnail.jpg"}
+                    autoPlay // Automatically start playing the video
+                    muted // Mute the video to allow autoplay in most browsers
                 >
                     Your browser does not support the video tag.
                 </video>
-                {isLoadingQuality && (
-                    <div className="loading-spinner">Changing quality...</div>
-                )}
+                {isLoadingQuality && <div className="loading-spinner">Changing quality...</div>}
             </div>
 
             {/* Title */}
             <h1 className="video-title">{video?.title || "Untitled Video"}</h1>
             <div className="video-description">
-                {/* Metadata */}
                 <div className="video-metadata">
-                    <p>
-                        Published on:{" "}
-                        {new Date(
-                            video?.published_time || video?.created_at
-                        ).toLocaleDateString()}
-                    </p>
+                    <p>Published on: {new Date(video?.created_at).toLocaleDateString()}</p>
                     <p>Views: {video?.views || 0}</p>
                 </div>
                 <p>{video?.description || "No description available."}</p>
             </div>
+
             {/* Quality Selector */}
             <div className="quality-selector">
                 <h3>Select Quality:</h3>
-                {Object.keys(availableQualities).length > 0 ? (
-                    Object.entries(availableQualities).map(([label, url]) => (
+                {Object.keys(videoUrls).length > 0 ? (
+                    Object.entries(videoUrls).map(([label, url]) => (
                         <button
                             key={label}
                             onClick={() => handleQualityChange(url)}
-                            className={`quality-button ${
-                                currentQuality === url ? "active-quality" : ""
-                            }`}
+                            className={`quality-button ${currentQuality === url ? "active-quality" : ""}`}
                             disabled={isLoadingQuality}
                         >
                             {label}
