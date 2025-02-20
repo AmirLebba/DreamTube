@@ -1,6 +1,6 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import Upload from "./upload/Upload";
 import VideoBrowser from "./Browse/VideoBrowser";
 import VPlayer from "./Player/VPlayer";
